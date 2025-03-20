@@ -1,5 +1,11 @@
 package ru.yandex.architectureproject.presentation.state
 
+import ru.yandex.architectureproject.data.model.Task
+
 sealed class TaskAction {
-    // TODO: Здесь должны быть действия (загрузка заданий, добавление задания, обновление статуса задания (сделано/не сделано) и удаление задания)
-}
+    data object LoadingTask : TaskAction()
+    data class AddTasks(val task: Task):TaskAction()
+    data class UpdateTaskStatus(val taskID: Int, val isCompleted:Boolean): TaskAction()
+    data class DeleteTask(val taskID: Int): TaskAction()
+
+   }

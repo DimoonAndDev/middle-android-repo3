@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = {
                     if (taskText.value.isNotBlank()) {
-                        onAction(TaskAction.AddTask(taskText.value))
+                        onAction(TaskAction.AddTasks(Task(text = taskText.value)))
                         taskText.value = ""
                     }
                 }) {

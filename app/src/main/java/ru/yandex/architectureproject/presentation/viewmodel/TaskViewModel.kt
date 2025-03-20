@@ -3,12 +3,14 @@ package ru.yandex.architectureproject.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.yandex.architectureproject.domain.AddTaskUseCase
@@ -29,13 +31,29 @@ class TaskViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow<TaskState>(TaskState.Loading)
     val state: StateFlow<TaskState> = _state.asStateFlow()
+    val taskDeletetingJobsMap = mutableMapOf<Int, Job>()
 
     init {
-        reduce(TaskAction.LoadTasks)
+        reduce(TaskAction.LoadingTask)
     }
 
     fun reduce(action: TaskAction) {
-        // TODO: Здесь должна быть обработка действий
+        viewModelScope.launch(ioDispatcher) {
+            when (action) {
+                is TaskAction.LoadingTask -> loadTasks()
+                is TaskAction.AddTasks -> addTaskUseCase.invoke(action.task.text)
+                is TaskAction.UpdateTaskStatus -> if (action.isCompleted) {
+                    taskDeletetingJobsMap.put(action.taskID, this.coroutineContext.job)
+                    completeTaskUseCase(action.taskID)
+                } else {
+                    taskDeletetingJobsMap[action.taskID]?.cancel()
+                    incompleteTaskUseCase(action.taskID)
+                }
+
+                is TaskAction.DeleteTask -> deleteTaskUseCase.invoke(action.taskID)
+
+            }
+        }
     }
 
     private suspend fun loadTasks() {
